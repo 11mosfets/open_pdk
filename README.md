@@ -68,3 +68,10 @@ touching your own design, to confirm the install actually works.
   Homebrew, the script will tell you what to install manually.
 - **First `nix-shell` invocation** pulls the FOSSi binary cache and can
   take ~10 minutes. Every invocation after that is fast.
+
+## Real issues hit and fixed (from a live Ubuntu 24.04 VPS run)
+
+- **PEP 668 blocks plain `pip install`.** Ubuntu 24.04's system Python refuses unmanaged installs. Fixed by switching Fault's install to `pipx`, which isolates it into its own venv.
+- **Fault's pyverilog dependency has to live at the *system* Python level, not inside the pipx venv.** Fault's Swift binary spawns a fresh `python3` subprocess by searching PATH rather than reusing pipx's isolated interpreter — that subprocess resolves to the system Python, which never sees anything injected into the pipx venv. Fixed with `pip3 install pyverilog --break-system-packages` at the system level. Low-risk since pyverilog is pure-Python with no compiled deps to conflict with anything apt/brew manages.
+- **Swiftly's env sourcing didn't persist across sessions.** The script originally only sourced `env.sh` within its own process. Fixed by also appending that `source` line to `~/.bashrc`/`~/.zshrc`.
+- **`nix-shell` or `swift` "not found" right after install, in the same terminal.** Not a broken install — it's a stale shell session that predates the PATH changes. Reconnect / open a new terminal and it resolves.
